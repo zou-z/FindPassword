@@ -43,7 +43,13 @@ class Main:
         print("%10s all"%("所有账户"))
         print("%12s find (名称)"%("搜索"))
         print("%12s decode (索引)"%("解密"))
-        print("%10s repsw (索引) (新的未加密密码)"%("修改密码"))
+        print("%10s additem (名称) (地址) (用户名) (原始密码) (详细信息)"%("添加项目"))
+        print("%10s rmitem (索引)"%("删除项目"))
+        print("%10s update name (索引) (新的名称)"%("修改名称"))
+        print("%10s update address (索引) (新的地址)"%("修改地址"))
+        print("%9s update user (索引) (新的用户名)"%("修改用户名"))
+        print("%10s update psw (索引) (新的原始密码)"%("修改密码"))
+        print("%8s update detail (索引) (新的详细信息)"%("修改详细信息"))
         print("%7s key"%("查看现在的密钥"))
         print("%10s newkey (新密钥)           //修改输入的密钥"%("修改密钥"))
         print("%10s rekey (旧密钥) (新密钥)   //以新密钥重新存储所有的密码,且修改输入的密钥"%("更换密钥"))
@@ -67,28 +73,79 @@ class Main:
                     print("[!] 格式为:find (名称)")
             elif cmd[0]=="decode":
                 try:
-                    index=int(cmd[1])-1
-                    if 0<=index<len(self.data):
-                        tmp=self.main_process_decode(index)
-                        print("[{0}][{1}]".format(self.data[index][2],tmp))
-                    else:
-                        print("[x] 索引范围应在[{0},{1}]".format(1,len(self.data)))
+                    try:
+                        index=int(cmd[1])-1
+                        if 0<=index<len(self.data):
+                            tmp=self.main_process_decode(index)
+                            print("[{0}][{1}]".format(self.data[index][2],tmp))
+                        else:
+                            print("[x] 索引范围应在[{0},{1}]".format(1,len(self.data)))
+                    except ValueError:
+                        print("[×] 指令错误!索引值为整数")
                 except IndexError:
                     print("[×] 指令错误!")
                     print("[!] 格式为:decode (索引)")
-            elif cmd[0]=="repsw":
+            elif cmd[0]=="update":
                 try:
-                    index=int(cmd[1])-1
-                    if 0<=index<len(self.data):
-                        enc_psw=self.main_process_encode(cmd[2])
-                        self.db.execute("update account set Psw=\""+enc_psw+"\" where Name=\""+self.data[index][0]+"\"")
-                        self.conn.commit()
-                        print("[√] 完成!")
-                    else:
-                        print("[x] 索引范围应在[{0},{1}]".format(1,len(self.data)))
+                    try:
+                        index=int(cmd[2])-1
+                        if 0<=index<len(self.data):
+                            if cmd[1]=="name":
+                                self.db.execute('update account set Name="{0}" where Name="{1}"'.format(cmd[3],self.data[index][0]))
+                            elif cmd[1]=="address":
+                                self.db.execute('update account set Address="{0}" where Name="{1}"'.format(cmd[3],self.data[index][0]))
+                            elif cmd[1]=="user":
+                                self.db.execute('update account set User="{0}" where Name="{1}"'.format(cmd[3],self.data[index][0]))
+                            elif cmd[1]=="psw":
+                                encode_psw=self.main_process_encode(cmd[3])
+                                self.db.execute('update account set Psw="{0}" where Name="{1}"'.format(encode_psw,self.data[index][0]))
+                            elif cmd[1]=="detail":
+                                self.db.execute('update account set Detail="{0}" where Name="{1}"'.format(cmd[3],self.data[index][0]))
+                            else:
+                                print("[×] 指令错误!")
+                                print("[!] 格式为:update name (索引) (新的名称)")
+                                print("[!] 格式为:update address (索引) (新的地址)")
+                                print("[!] 格式为:update user (索引) (新的用户名)")
+                                print("[!] 格式为:update psw (索引) (新的原始密码)")
+                                print("[!] 格式为:update detail (索引) (新的详细信息)")
+                                continue
+                            self.conn.commit()
+                            print("[√] 完成!")
+                        else:
+                            print("[x] 索引范围应在[{0},{1}]".format(1,len(self.data)))
+                    except ValueError:
+                        print("[×] 指令错误!索引值为整数")
                 except IndexError:
                     print("[×] 指令错误!")
-                    print("[!] 格式为:repsw (索引) (新的未加密密码)")
+                    print("[!] 格式为:update name (索引) (新的名称)")
+                    print("[!] 格式为:update address (索引) (新的地址)")
+                    print("[!] 格式为:update user (索引) (新的用户名)")
+                    print("[!] 格式为:update psw (索引) (新的原始密码)")
+                    print("[!] 格式为:update detail (索引) (新的详细信息)")
+            elif cmd[0]=="additem":
+                try:
+                    encode_psw=self.main_process_encode(cmd[4])
+                    self.db.execute('insert into account values("{0}","{1}","{2}","{3}","{4}")'.format(cmd[1],cmd[2],cmd[3],encode_psw,cmd[5]))
+                    self.conn.commit()
+                    print("[√] 完成!")
+                except IndexError:
+                    print("[×] 指令错误!")
+                    print("[!] 格式为:additem (名称) (地址) (用户名) (原始密码) (详细信息)")
+            elif cmd[0]=="rmitem":
+                try:
+                    try:
+                        index=int(cmd[1])-1
+                        if 0<=index<len(self.data):
+                            self.db.execute('delete from account where Name="{0}"'.format(self.data[index][0]))
+                            self.conn.commit()
+                            print("[√] 完成!")
+                        else:
+                            print("[x] 索引范围应在[{0},{1}]".format(1,len(self.data)))
+                    except ValueError:
+                        print("[×] 指令错误!索引值为整数")
+                except IndexError:
+                    print("[×] 指令错误!")
+                    print("[!] 格式为:rmitem (索引)")
             elif cmd[0]=="key":
                 if self.key==None:
                     print("[!] 未设置密钥!")
@@ -128,7 +185,7 @@ class Main:
             tmp=int(enc_psw[i:i+2],16)-ord(self.key[int(i/2)%len(self.key)])
             dec_psw+=chr(tmp)
         return dec_psw
-    
+
     def main_process_encode(self,psw):
         if self.key==None:
             self.key=input("请输入密钥:")
